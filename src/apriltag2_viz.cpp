@@ -26,6 +26,7 @@ private:
 
     cv::Mat img;
     cv::Mat merged;
+    cv::Mat overlay;
     std::string overlay_mode;
 
     static const std::array<cv::Scalar, 4> colours;
@@ -43,6 +44,19 @@ private:
 
     void onImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg_img) {
         img = cv::imdecode(cv::Mat(msg_img->data), CV_LOAD_IMAGE_COLOR);
+
+        if(overlay.empty()) {
+            merged = img;
+        }
+        else {
+            // blend overlay and image
+            double alpha;
+            get_parameter_or("alpha", alpha, 0.5);
+            cv::addWeighted(img, 1, overlay, alpha, 0, merged, -1);
+        }
+
+        cv::imshow("tag", merged);
+        cv::waitKey(1);
     }
 
     void onTags(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg_tag) {
@@ -50,7 +64,7 @@ private:
             return;
 
         // overlay with transparent background
-        cv::Mat overlay(img.size(), CV_8UC3, cv::Scalar(0,0,0,0));
+        overlay = cv::Mat(img.size(), CV_8UC3, cv::Scalar(0,0,0,0));
 
         for(const auto& d : msg_tag->detections) {
             if(overlay_mode=="axes") {
@@ -80,14 +94,6 @@ private:
                 throw std::runtime_error("unknown overlay mode");
             }
         }
-
-        // blend overlay and image
-        double alpha;
-        get_parameter_or("alpha", alpha, 0.5);
-        cv::addWeighted(img, 1, overlay, alpha, 0, merged, -1);
-
-        cv::imshow("tag", merged);
-        cv::waitKey(1);
     }
 };
 
