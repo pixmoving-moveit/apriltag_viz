@@ -16,6 +16,8 @@ public:
         sub_tag = this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
             "detections",
             std::bind(&AprilVizNode::onTags, this, std::placeholders::_1));
+
+        get_parameter_or<std::string>("overlay_mode", overlay_mode, "axes");
     }
 
 private:
@@ -24,8 +26,20 @@ private:
 
     cv::Mat img;
     cv::Mat merged;
+    std::string overlay_mode;
 
     static const std::array<cv::Scalar, 4> colours;
+
+    static std::array<double, 2> project(const std::array<double,9> H, // homography matric
+                                         const std::array<double,2> pc) // point in camera
+    {
+        std::array<double,2> pi;    // point in image
+        const auto z = H[3*2+0] * pc[0] + H[3*2+1] * pc[1] + H[3*2+2];
+        for(uint i(0); i<2; i++) {
+            pi[i] = (H[3*i+0] * pc[0] + H[3*i+1] * pc[1] + H[3*i+2]) / z;
+        }
+        return pi;
+    }
 
     void onImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg_img) {
         img = cv::imdecode(cv::Mat(msg_img->data), CV_LOAD_IMAGE_COLOR);
@@ -35,25 +49,42 @@ private:
         if(img.empty())
             return;
 
-        cv::Mat overlay(img.size(), CV_8UC3, cv::Scalar(0,0,0));
+        // overlay with transparent background
+        cv::Mat overlay(img.size(), CV_8UC3, cv::Scalar(0,0,0,0));
 
         for(const auto& d : msg_tag->detections) {
-            std::array<cv::Point,3> points;
-            points[0].x = d.centre[0];
-            points[0].y = d.centre[1];
+            if(overlay_mode=="axes") {
+                // axes
+                const auto c = project(d.homography, {{0,0}});
+                const auto x = project(d.homography, {{0,1}});
+                const auto y = project(d.homography, {{1,0}});
+                cv::line(overlay, cv::Point2d(c[0], c[1]), cv::Point2d(x[0],x[1]), cv::Scalar(0,0,255,255), 3);
+                cv::line(overlay, cv::Point2d(c[0], c[1]), cv::Point2d(y[0],y[1]), cv::Scalar(0,255,0,255), 3);
+            }
+            else if(overlay_mode=="tri") {
+                // triangle patches
+                std::array<cv::Point,3> points;
+                points[0].x = d.centre[0];
+                points[0].y = d.centre[1];
 
-            for(uint i(0); i<4; i++) {
-                points[1].x = d.corners[(2*i+0)%8];
-                points[1].y = d.corners[(2*i+1)%8];
-                points[2].x = d.corners[(2*i+2)%8];
-                points[2].y = d.corners[(2*i+3)%8];
+                for(uint i(0); i<4; i++) {
+                    points[1].x = d.corners[(2*i+0)%8];
+                    points[1].y = d.corners[(2*i+1)%8];
+                    points[2].x = d.corners[(2*i+2)%8];
+                    points[2].y = d.corners[(2*i+3)%8];
 
-                cv::fillConvexPoly(overlay, points.data(), 3, colours[i]);
+                    cv::fillConvexPoly(overlay, points.data(), 3, colours[i]);
+                }
+            }
+            else {
+                throw std::runtime_error("unknown overlay mode");
             }
         }
 
-        const double alpha = 0.8;
-        cv::addWeighted(img, alpha, overlay, 1-alpha, 0, merged, -1);
+        // blend overlay and image
+        double alpha;
+        get_parameter_or("alpha", alpha, 0.5);
+        cv::addWeighted(img, 1, overlay, alpha, 0, merged, -1);
 
         cv::imshow("tag", merged);
         cv::waitKey(1);
@@ -61,10 +92,10 @@ private:
 };
 
 const std::array<cv::Scalar, 4> AprilVizNode::colours = {{
-    cv::Scalar(0,0,255),    // red
-    cv::Scalar(0,255,0),    // green
-    cv::Scalar(255,0,0),    // blue
-    cv::Scalar(255,255,255) // white
+    cv::Scalar(0,0,255,255),    // red
+    cv::Scalar(0,255,0,255),    // green
+    cv::Scalar(255,0,0,255),    // blue
+    cv::Scalar(255,255,255,255) // white
 }};
 
 int main(int argc, char **argv) {
