@@ -31,7 +31,7 @@ private:
 
     static const std::array<cv::Scalar, 4> colours;
 
-    static std::array<double, 2> project(const std::array<double,9> H, // homography matric
+    static std::array<double, 2> project(const std::array<double,9> H, // homography matrix
                                          const std::array<double,2> pc) // point in camera
     {
         std::array<double,2> pi;    // point in image
@@ -78,14 +78,14 @@ private:
             else if(overlay_mode=="tri") {
                 // triangle patches
                 std::array<cv::Point,3> points;
-                points[0].x = d.centre[0];
-                points[0].y = d.centre[1];
+                points[0].x = d.centre.x;
+                points[0].y = d.centre.y;
 
                 for(uint i(0); i<4; i++) {
-                    points[1].x = d.corners[(2*i+0)%8];
-                    points[1].y = d.corners[(2*i+1)%8];
-                    points[2].x = d.corners[(2*i+2)%8];
-                    points[2].y = d.corners[(2*i+3)%8];
+                    points[1].x = d.corners[i].x;
+                    points[1].y = d.corners[i].y;
+                    points[2].x = d.corners[i+1].x;
+                    points[2].y = d.corners[i+1].y;
 
                     cv::fillConvexPoly(overlay, points.data(), 3, colours[i]);
                 }
