@@ -70,8 +70,8 @@ private:
             if(overlay_mode=="axes") {
                 // axes
                 const auto c = project(d.homography, {{0,0}});
-                const auto x = project(d.homography, {{0,1}});
-                const auto y = project(d.homography, {{1,0}});
+                const auto x = project(d.homography, {{1,0}});
+                const auto y = project(d.homography, {{0,1}});
                 cv::line(overlay, cv::Point2d(c[0], c[1]), cv::Point2d(x[0],x[1]), cv::Scalar(0,0,255,255), 3);
                 cv::line(overlay, cv::Point2d(c[0], c[1]), cv::Point2d(y[0],y[1]), cv::Scalar(0,255,0,255), 3);
             }
