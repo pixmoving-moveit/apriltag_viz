@@ -82,16 +82,20 @@ private:
                 points[0].y = d.centre.y;
 
                 for(uint i(0); i<4; i++) {
-                    points[1].x = d.corners[i].x;
-                    points[1].y = d.corners[i].y;
-                    points[2].x = d.corners[i+1].x;
-                    points[2].y = d.corners[i+1].y;
+                    points[1].x = d.corners[i%4].x;
+                    points[1].y = d.corners[i%4].y;
+                    points[2].x = d.corners[(i+1)%4].x;
+                    points[2].y = d.corners[(i+1)%4].y;
 
                     cv::fillConvexPoly(overlay, points.data(), 3, colours[i]);
                 }
             }
             else {
                 throw std::runtime_error("unknown overlay mode");
+            }
+
+            for(uint i(0); i<4; i++) {
+                cv::circle(overlay, cv::Point(d.corners[i].x, d.corners[i].y), 5, colours[i], 2);
             }
         }
     }
@@ -101,7 +105,7 @@ const std::array<cv::Scalar, 4> AprilVizNode::colours = {{
     cv::Scalar(0,0,255,255),    // red
     cv::Scalar(0,255,0,255),    // green
     cv::Scalar(255,0,0,255),    // blue
-    cv::Scalar(255,255,255,255) // white
+    cv::Scalar(0,255,255,255)   // yellow
 }};
 
 int main(int argc, char **argv) {
