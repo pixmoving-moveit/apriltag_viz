@@ -12,7 +12,8 @@ public:
     AprilVizNode() : Node("apriltag_viz") {
         sub_img = this->create_subscription<sensor_msgs::msg::CompressedImage>(
             "image/compressed",
-            std::bind(&AprilVizNode::onImage, this, std::placeholders::_1));
+            std::bind(&AprilVizNode::onImage, this, std::placeholders::_1),
+            rmw_qos_profile_sensor_data);
         sub_tag = this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
             "detections",
             std::bind(&AprilVizNode::onTags, this, std::placeholders::_1));
