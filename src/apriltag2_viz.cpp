@@ -9,7 +9,7 @@
 
 class AprilVizNode : public rclcpp::Node {
 public:
-    AprilVizNode() : Node("apriltag_viz") {
+    AprilVizNode() : Node("apriltag_viz", "apriltag") {
         sub_img = this->create_subscription<sensor_msgs::msg::CompressedImage>(
             "image/compressed",
             std::bind(&AprilVizNode::onImage, this, std::placeholders::_1),
