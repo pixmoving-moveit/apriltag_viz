@@ -4,20 +4,26 @@ project(apriltag2_viz)
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(apriltag_msgs REQUIRED)
 
-find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIR})
-link_directories(${OpenCV_LINK_DIRECTORIES})
-
-add_executable(apriltag2_viz src/apriltag2_viz.cpp)
+add_library(apriltag2_viz SHARED src/apriltag2_viz.cpp)
 ament_target_dependencies(apriltag2_viz
   rclcpp
+  rclcpp_components
+  image_transport
+  cv_bridge
   sensor_msgs
   apriltag_msgs)
-target_link_libraries(apriltag2_viz ${OpenCV_LIBRARIES})
+rclcpp_components_register_nodes(apriltag2_viz "AprilVizNode")
 
-install(TARGETS apriltag2_viz DESTINATION lib/${PROJECT_NAME})
+install(TARGETS apriltag2_viz
+  EXPORT export_${PROJECT_NAME}
+  DESTINATION lib)
+
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()

@@ -1,28 +1,36 @@
 // ros
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/compressed_image.hpp>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/msg/image.hpp>
 #include <apriltag_msgs/msg/april_tag_detection.hpp>
 #include <apriltag_msgs/msg/april_tag_detection_array.hpp>
 
-#include <opencv/cv.hpp>
-#include <opencv/highgui.h>
 
 class AprilVizNode : public rclcpp::Node {
 public:
-    AprilVizNode() : Node("apriltag_viz", "apriltag") {
-        sub_img = this->create_subscription<sensor_msgs::msg::CompressedImage>(
-            "image/compressed",
+    AprilVizNode(const rclcpp::NodeOptions options = rclcpp::NodeOptions())
+    : Node("apriltag_viz", rclcpp::NodeOptions(options).use_intra_process_comms(true))
+    {
+        get_parameter_or<std::string>("overlay_mode", overlay_mode, "axes");
+
+        std::string image_transport;
+        get_parameter_or<std::string>("image_transport", image_transport, "raw");
+
+        pub_tags = image_transport::create_publisher(this, "tag_detections_image");
+
+        sub_img = image_transport::create_subscription(this, "image",
             std::bind(&AprilVizNode::onImage, this, std::placeholders::_1),
-            rmw_qos_profile_sensor_data);
+            image_transport, rmw_qos_profile_sensor_data);
+
         sub_tag = this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
             "detections",
             std::bind(&AprilVizNode::onTags, this, std::placeholders::_1));
-
-        get_parameter_or<std::string>("overlay_mode", overlay_mode, "axes");
     }
 
 private:
-    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr sub_img;
+    image_transport::Subscriber sub_img;
+    image_transport::Publisher pub_tags;
     rclcpp::Subscription<apriltag_msgs::msg::AprilTagDetectionArray>::SharedPtr sub_tag;
 
     cv::Mat img;
@@ -43,8 +51,8 @@ private:
         return pi;
     }
 
-    void onImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg_img) {
-        img = cv::imdecode(cv::Mat(msg_img->data), CV_LOAD_IMAGE_COLOR);
+    void onImage(const sensor_msgs::msg::Image::ConstSharedPtr & msg_img) {
+        img = cv_bridge::toCvShare(msg_img)->image;
 
         if(overlay.empty()) {
             merged = img;
@@ -56,8 +64,7 @@ private:
             cv::addWeighted(img, 1, overlay, alpha, 0, merged, -1);
         }
 
-        cv::imshow("tag", merged);
-        cv::waitKey(1);
+        pub_tags.publish(cv_bridge::CvImage(msg_img->header, msg_img->encoding, merged).toImageMsg());
     }
 
     void onTags(const apriltag_msgs::msg::AprilTagDetectionArray::SharedPtr msg_tag) {
@@ -109,9 +116,5 @@ const std::array<cv::Scalar, 4> AprilVizNode::colours = {{
     cv::Scalar(0,255,255,255)   // yellow
 }};
 
-int main(int argc, char **argv) {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<AprilVizNode>());
-    rclcpp::shutdown();
-    return 0;
-}
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(AprilVizNode)
