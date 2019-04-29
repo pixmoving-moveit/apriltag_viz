@@ -3,7 +3,7 @@ from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
 def generate_launch_description():
-    composable_node = ComposableNode(node_name='viz', package='apriltag2_viz', node_plugin='AprilVizNode')
+    composable_node = ComposableNode(node_name='viz', package='apriltag_viz', node_plugin='AprilVizNode')
     container = ComposableNodeContainer(
             node_name='viz_container',
             node_namespace='apriltag',

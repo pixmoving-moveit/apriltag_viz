@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>apriltag2_viz</name>
+  <name>apriltag_viz</name>
   <version>0.1.0</version>
   <description>Visualisation for detected AprilTags</description>
   <maintainer email="Rauch.Christian@gmx.de"></maintainer>
