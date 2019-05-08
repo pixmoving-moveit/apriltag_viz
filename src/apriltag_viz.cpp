@@ -21,7 +21,7 @@ public:
 
         sub_img = image_transport::create_subscription(this, "image",
             std::bind(&AprilVizNode::onImage, this, std::placeholders::_1),
-            image_transport, rmw_qos_profile_sensor_data);
+            image_transport);
 
         sub_tag = this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
             "detections",
