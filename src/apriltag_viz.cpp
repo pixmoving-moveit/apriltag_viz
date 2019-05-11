@@ -24,7 +24,7 @@ public:
             image_transport);
 
         sub_tag = this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
-            "detections",
+            "detections", rclcpp::QoS(1),
             std::bind(&AprilVizNode::onTags, this, std::placeholders::_1));
     }
 
