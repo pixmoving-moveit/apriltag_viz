@@ -52,7 +52,7 @@ private:
     }
 
     void onImage(const sensor_msgs::msg::Image::ConstSharedPtr & msg_img) {
-        img = cv_bridge::toCvShare(msg_img)->image;
+        img = cv_bridge::toCvCopy(msg_img)->image;
 
         if(overlay.empty()) {
             merged = img;
