@@ -16,12 +16,16 @@ public:
 
         std::string image_transport;
         get_parameter_or<std::string>("image_transport", image_transport, "raw");
+        
+        rclcpp::QoS qos_settings(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default));
+        qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
 
         pub_tags = image_transport::create_publisher(this, "tag_detections_image");
 
         sub_img = image_transport::create_subscription(this, "image",
             std::bind(&AprilVizNode::onImage, this, std::placeholders::_1),
-            image_transport);
+            image_transport,
+            qos_settings.get_rmw_qos_profile());
 
         sub_tag = this->create_subscription<apriltag_msgs::msg::AprilTagDetectionArray>(
             "detections", rclcpp::QoS(1),
@@ -53,7 +57,6 @@ private:
 
     void onImage(const sensor_msgs::msg::Image::ConstSharedPtr & msg_img) {
         img = cv_bridge::toCvCopy(msg_img)->image;
-
         if(overlay.empty()) {
             merged = img;
         }
